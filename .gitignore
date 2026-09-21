@@ -1,0 +1,6 @@
+node_modules/
+*.torrent
+*.iso
+*.mp4
+*.mkv
+.env
