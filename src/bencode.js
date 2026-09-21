@@ -22,6 +22,37 @@ function decodeString(torrentBuffer, cursor) {
   };
 }
 
+function decodeInt(torrentBuffer, cursor) {
+  cursor++;
+  const start = cursor;
+
+  while (torrentBuffer[cursor] != 101) {
+    cursor++;
+  }
+
+  const intString = torrentBuffer.toString("ascii", start, cursor);
+  cursor++;
+
+  const value = parseInt(intString, 10);
+
+  return {
+    value: value,
+    cursor: cursor,
+  };
+}
+
+function decodeNext(buffer, cursor) {
+  const byte = buffer[cursor];
+
+  if (byte === 105) {
+    return decodeInt(buffer, cursor);
+  }
+
+  return decodeString(buffer, cursor);
+}
+
 module.exports = {
+  decodeNext,
   decodeString,
+  decodeInt,
 };
