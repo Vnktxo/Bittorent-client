@@ -2,7 +2,7 @@
 const fs = require("fs");
 const crypto = require("crypto");
 const { decodeNext, encode } = require("./src/bencode.js");
-const { buildTrackerUrl } = require("./src/tracker.js");
+const { buildTrackerUrl, getPeers } = require("./src/tracker.js");
 
 const torrentBuffer = fs.readFileSync("./debian.iso.torrent");
 const result = decodeNext(torrentBuffer, 0);
@@ -12,4 +12,11 @@ const infoBuffer = encode(info);
 const infoHash = crypto.createHash("sha1").update(infoBuffer).digest();
 
 const trackerUrl = buildTrackerUrl(result.value, infoHash);
-console.log(trackerUrl);
+console.log("Contacting tracker rn...");
+
+getPeers(trackerUrl, (responseBuffer) => {
+  console.log("Tracker Responded gng!");
+
+  const trackerResponse = decodeNext(responseBuffer, 0);
+  console.log(trackerResponse.value);
+});

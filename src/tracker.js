@@ -1,6 +1,7 @@
 "use strict";
 
 const http = require("http");
+const { URL } = require("url");
 const crypto = require("crypto");
 
 let peer_id = null;
@@ -8,7 +9,7 @@ let peer_id = null;
 function buildPeerId() {
   if (!peer_id) {
     peer_id = crypto.randomBytes(20);
-    Buffer.from("-VT0001-").copy(peer_id, 0);
+    Buffer.from("-TR2940-").copy(peer_id, 0);
   }
   return peer_id;
 }
@@ -17,7 +18,7 @@ function urlEncodeHash(buffer) {
   let encoded = "";
 
   for (const byte of buffer) {
-    encoded = "%" + byte.toString(16).padStart(2, "0");
+    encoded += "%" + byte.toString(16).padStart(2, "0");
   }
   return encoded;
 }
@@ -42,6 +43,41 @@ function buildTrackerUrl(torrent, infoHash) {
   return finalUrl;
 }
 
+function getPeers(trackerUrl, callback) {
+  const myUrl = new URL(trackerUrl);
+
+  const options = {
+    hostname: myUrl.hostname,
+    port: myUrl.port || 80,
+    path: myUrl.pathname + myUrl.search,
+    method: "GET",
+    headers: {
+      "User-Agent": "Transmission/2.94",
+      Connection: "close",
+    },
+  };
+
+  const req = http.get(options, (res) => {
+    const chunks = [];
+
+    res.on("data", (chunk) => {
+      chunks.push(chunk);
+    });
+
+    res.on("end", () => {
+      const responseBuffer = Buffer.concat(chunks);
+      callback(responseBuffer);
+    });
+  });
+
+  req.on("error", (err) => {
+    console.error("Network Error:", err.message);
+  });
+
+  req.end();
+}
+
 module.exports = {
   buildTrackerUrl,
+  getPeers,
 };
