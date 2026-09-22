@@ -3,7 +3,7 @@
 function decodeString(torrentBuffer, cursor) {
   let lengthString = "";
 
-  while (torrentBuffer[cursor] != 58) {
+  while (torrentBuffer[cursor] !== 58) {
     lengthString += String.fromCharCode(torrentBuffer[cursor]);
     cursor++;
   }
@@ -12,12 +12,11 @@ function decodeString(torrentBuffer, cursor) {
 
   const length = parseInt(lengthString, 10);
   const stringData = torrentBuffer.slice(cursor, cursor + length);
-  const result = stringData.toString("utf8");
 
   cursor += length;
 
   return {
-    value: result,
+    value: stringData,
     cursor: cursor,
   };
 }
@@ -26,7 +25,7 @@ function decodeInt(torrentBuffer, cursor) {
   cursor++;
   const start = cursor;
 
-  while (torrentBuffer[cursor] != 101) {
+  while (torrentBuffer[cursor] !== 101) {
     cursor++;
   }
 
@@ -41,11 +40,57 @@ function decodeInt(torrentBuffer, cursor) {
   };
 }
 
+function decodeLists(torrentBuffer, cursor) {
+  cursor++;
+  const list = [];
+
+  while (torrentBuffer[cursor] !== 101) {
+    const result = decodeNext(torrentBuffer, cursor);
+    list.push(result.value);
+    cursor = result.cursor;
+  }
+  cursor++;
+  return {
+    value: list,
+    cursor: cursor,
+  };
+}
+
+function decodeDictionary(torrentBuffer, cursor) {
+  cursor++;
+
+  const dict = {};
+
+  while (torrentBuffer[cursor] !== 101) {
+    const keyResult = decodeNext(torrentBuffer, cursor);
+    cursor = keyResult.cursor;
+
+    const valueResult = decodeNext(torrentBuffer, cursor);
+    cursor = valueResult.cursor;
+
+    dict[keyResult.value] = valueResult.value;
+  }
+  cursor++;
+
+  return {
+    value: dict,
+    cursor: cursor,
+  };
+}
+
 function decodeNext(buffer, cursor) {
   const byte = buffer[cursor];
 
   if (byte === 105) {
     return decodeInt(buffer, cursor);
+  }
+
+  if (byte === 108) {
+    return decodeLists(buffer, cursor);
+  }
+
+  if (byte === 100) {
+    return decodeDictionary(buffer, cursor);
   }
 
   return decodeString(buffer, cursor);
@@ -55,4 +100,6 @@ module.exports = {
   decodeNext,
   decodeString,
   decodeInt,
+  decodeLists,
+  decodeDictionary,
 };
