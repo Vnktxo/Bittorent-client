@@ -96,10 +96,47 @@ function decodeNext(buffer, cursor) {
   return decodeString(buffer, cursor);
 }
 
+function encode(data) {
+  const buffers = [];
+
+  if (typeof data === "number") {
+    return Buffer.from(`i${data}e`);
+  }
+
+  if (Buffer.isBuffer(data)) {
+    const length = data.length;
+    const prefix = Buffer.from(length + ":");
+    return Buffer.concat([prefix, data]);
+  }
+
+  if (Array.isArray(data)) {
+    buffers.push(Buffer.from("l"));
+    for (const item of data) {
+      buffers.push(encode(item));
+    }
+    buffers.push(Buffer.from("e"));
+
+    return Buffer.concat(buffers);
+  }
+
+  if (typeof data === "object") {
+    buffers.push(Buffer.from("d"));
+
+    const keys = Object.keys(data).sort();
+    for (const key of keys) {
+      buffers.push(encode(Buffer.from(key)));
+      buffers.push(encode(data[key]));
+    }
+    buffers.push(Buffer.from("e"));
+    return Buffer.concat(buffers);
+  }
+}
+
 module.exports = {
   decodeNext,
   decodeString,
   decodeInt,
   decodeLists,
   decodeDictionary,
+  encode,
 };
