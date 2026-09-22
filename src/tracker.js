@@ -77,7 +77,36 @@ function getPeers(trackerUrl, callback) {
   req.end();
 }
 
+function parsePeer(peersBuffer) {
+  const peers = [];
+
+  for (let i = 0; i + 6 <= peersBuffer.length; i += 6) {
+    const extractedIp = `${peersBuffer[i]}.${peersBuffer[i + 1]}.${peersBuffer[i + 2]}.${peersBuffer[i + 3]}`;
+    const extractedPort = peersBuffer.readUInt16BE(i + 4);
+
+    peers.push({ extractedIp, extractedPort });
+  }
+  return peers;
+}
+
+function parsePeerV6(peersBuffer) {
+  const peers = [];
+  for (let i = 0; i + 18 <= peersBuffer.length; i += 18) {
+    const ipBytes = peersBuffer.slice(i, i + 16);
+    const ip = ipBytes
+      .toString("hex")
+      .match(/.{1,4}/g)
+      .join(":");
+    const port = peersBuffer.readUInt16BE(i + 16);
+    peers.push({ ip, port });
+  }
+  return peers;
+}
+
 module.exports = {
   buildTrackerUrl,
+  buildPeerId,
   getPeers,
+  parsePeer,
+  parsePeerV6,
 };
